@@ -1,6 +1,6 @@
 #define GL9306_SERIAL Serial1
 #include "GL9306.h"
-GL9306 optFlow(23, 27);
+GL9306 optFlow();
 void setup()
 {
   Serial.begin(115200);
