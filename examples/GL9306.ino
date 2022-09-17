@@ -1,6 +1,8 @@
-#define GL9306_SERIAL Serial1
-#include "GL9306.h"
-GL9306 optFlow();
+#define USE_SERIAL Serial
+#include "GL9306OpticalFlow.h"
+
+GL9306 optFlow(&Serial2, 15, 2);
+
 void setup()
 {
   Serial.begin(115200);
@@ -9,7 +11,5 @@ void setup()
 void loop()
 {
   if (optFlow.available())
-  {
     optFlow.printValue();
-  }
 }
