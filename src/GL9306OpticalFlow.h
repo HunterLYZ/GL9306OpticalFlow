@@ -13,29 +13,30 @@ public:
     int speed_y;
     unsigned char qual;
 
-    GL9306(HardwareSerial *mySerial)
+    GL9306(HardwareSerial *mySerial, int8_t rxPin = -1, int8_t txPin = -1)
     {
         optSerial = mySerial;
-        optSerial->begin(19200);
+        optSerial->begin(19200, SERIAL_8N1, rxPin, txPin);
         USE_SERIAL.print("GL9306 begin");
     }
-    //
-    GL9306(HardwareSerial *mySerial, int8_t rxPin, int8_t txPin) // txPin will be wasted for no data should sent to GL9306
-    {
-        optSerial = mySerial;
-        optSerial->begin(19200);
-        if (rxPin != 0 && txPin != 0)
-        {
-            optSerial->setPins(rxPin, txPin);
-            USE_SERIAL.print("GL9306 begin");
-        }
-        else
-        {
-            USE_SERIAL.print("GL9306OpticalFlow negetive Uart Pin Number");
-            while (true)
-                ;
-        }
-    }
+//     function setPins is deprecated
+    
+//     GL9306(HardwareSerial *mySerial, int8_t rxPin, int8_t txPin) // txPin will be wasted for no data should sent to GL9306
+//     {
+//         optSerial = mySerial;
+//         optSerial->begin(19200);
+//         if (rxPin != 0 && txPin != 0)
+//         {
+//             optSerial->setPins(rxPin, txPin);
+//             USE_SERIAL.print("GL9306 begin");
+//         }
+//         else
+//         {
+//             USE_SERIAL.print("GL9306OpticalFlow negetive Uart Pin Number");
+//             while (true)
+//                 ;
+//         }
+//     }
 
     bool available()
     {
