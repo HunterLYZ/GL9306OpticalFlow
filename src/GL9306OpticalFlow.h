@@ -6,6 +6,18 @@
 
 #ifndef GL9306OpticalFlow_H
 #define GL9306OpticalFlow_H
+
+/**
+ * @brief
+ * 2023.2.1
+ * updated: deprecated function Serial.setPins()
+ * -HunterL
+ * 2023.2.6
+ * updated: more robust on Serial reading process
+ * updated: check bit fully funtional
+ * -HunterL
+ */
+
 class GL9306
 {
 public:
@@ -13,36 +25,20 @@ public:
     int speed_y;
     unsigned char qual;
 
-    GL9306(HardwareSerial *mySerial, int8_t rxPin = -1, int8_t txPin = -1)
+    GL9306(HardwareSerial *mySerial, int8_t rxPin = -1, int8_t txPin = -1) // txPin will be wasted for no data should sent to GL9306
     {
         optSerial = mySerial;
         optSerial->begin(19200, SERIAL_8N1, rxPin, txPin);
         USE_SERIAL.print("GL9306 begin");
     }
-//     function setPins is deprecated
-    
-//     GL9306(HardwareSerial *mySerial, int8_t rxPin, int8_t txPin) // txPin will be wasted for no data should sent to GL9306
-//     {
-//         optSerial = mySerial;
-//         optSerial->begin(19200);
-//         if (rxPin != 0 && txPin != 0)
-//         {
-//             optSerial->setPins(rxPin, txPin);
-//             USE_SERIAL.print("GL9306 begin");
-//         }
-//         else
-//         {
-//             USE_SERIAL.print("GL9306OpticalFlow negetive Uart Pin Number");
-//             while (true)
-//                 ;
-//         }
-//     }
 
     bool available()
     {
-        if (readUart())
-            if (decode())
-                return true;
+        if (optSerial->available() >= messageLength)
+            if (0xfe == optSerial->read()) // 校验头
+                if (readUart())
+                    if (decode())
+                        return true;
         return false;
     }
     void printValue()
@@ -55,39 +51,42 @@ public:
 
 private:
     HardwareSerial *optSerial;
-    byte UartRxOpticalFlow[9];
+    const static uint8_t messageLength = 7;
+    byte UartRxOpticalFlow[messageLength];
     bool decode()
     {
         uint8_t Check_sum = 0;
         static int16_t flow_x, flow_y;
-        if (UartRxOpticalFlow[0] == 0xfe) //校验头
+        if (UartRxOpticalFlow[0] == 0x04)
         {
-            Check_sum = (uint8_t)(UartRxOpticalFlow[2] + UartRxOpticalFlow[3] + UartRxOpticalFlow[4] + UartRxOpticalFlow[5]);
-            if (Check_sum == UartRxOpticalFlow[6]) //校验和正确
+            Check_sum = (uint8_t)(UartRxOpticalFlow[1] + UartRxOpticalFlow[2] + UartRxOpticalFlow[3] + UartRxOpticalFlow[4]);
+            if (Check_sum == UartRxOpticalFlow[5]) // 校验和正确
             {
-                flow_y = UartRxOpticalFlow[2] + (UartRxOpticalFlow[3] << 8);
-                flow_x = UartRxOpticalFlow[4] + (UartRxOpticalFlow[5] << 8);
-                qual = UartRxOpticalFlow[7];
+                flow_y = UartRxOpticalFlow[1] + (UartRxOpticalFlow[2] << 8);
+                flow_x = UartRxOpticalFlow[3] + (UartRxOpticalFlow[4] << 8);
+                qual = UartRxOpticalFlow[6];
                 speed_x = flow_x;
                 speed_y = flow_y;
                 return true;
             }
         }
-        Serial.println("decode failure");
+        USE_SERIAL.println("Opt decode failure");
         return false;
     }
     bool readUart()
     {
-        int j = optSerial->available();
-        if (j != 0)
-        {
-            for (int n = 0; n < j; n++)
+        uint8_t i = 0;
+        while (optSerial->available() <= messageLength)
+            if (i++ > 50)
             {
-                UartRxOpticalFlow[n] = optSerial->read();
+                USE_SERIAL.println("Opt read failure");
+                return false;
             }
-            return true;
+        for (uint8_t n = 0; n < messageLength; n++)
+        {
+            UartRxOpticalFlow[n] = optSerial->read();
         }
-        return false;
+        return true;
     }
 };
 #endif
